@@ -1,103 +1,107 @@
-const { Builder, By, until } = require("selenium-webdriver");
-const { expect } = require("chai");
+const { Builder, By, until } = require('selenium-webdriver');
+const chrome = require('selenium-webdriver/chrome');
+const { expect } = require('chai');
 
-describe("UI Testing using Selenium", function () {
-  this.timeout(30000); // Set timeout for Mocha tests
-  let driver;
+const options = new chrome.Options();
+options.addArguments('--headless'); // Run headless
+options.addArguments('--disable-gpu');
+options.addArguments('--no-sandbox');
+options.addArguments('--window-size=1920,1080');
+options.addArguments('--disable-extensions');
+options.addArguments('--disable-infobars');
+options.addArguments('--disable-dev-shm-usage');
 
-  // Inisialisasi WebDriver sebelum menjalankan test case
-  before(async function () {
-    driver = await new Builder().forBrowser("chrome").build(); // Bisa diganti 'firefox' untuk Firefox
-  });
+describe('UI Testing using Selenium', function () {
+    this.timeout(60000); // Set timeout for Mocha tests
 
-  // Tutup WebDriver setelah semua test selesai
-  after(async function () {
-    await driver.quit();
-  });
+    let driver;
 
-  it("should load the login page", async function () {
-    await driver.get("D:\\mgodinf\\PPMPL\\ppmpl-prakt4\\index.html"); // Ubah path sesuai lokasi file index.html
-    const title = await driver.getTitle();
-    expect(title).to.equal("Login Page");
-  });
+    // Initialize WebDriver before running test cases
+    before(async function () {
+        driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
+    });
 
-  it("should validate that login button and input fields are visible", async function () {
-    // Memeriksa apakah tombol login terlihat
-    const isLoginButtonDisplayed = await driver
-      .findElement(By.id("loginButton"))
-      .isDisplayed();
-    expect(isLoginButtonDisplayed).to.be.true;
+    // Close WebDriver after all tests are done
+    after(async function () {
+        await driver.quit();
+    });
 
-    // Memeriksa apakah field username terlihat
-    const isUsernameDisplayed = await driver
-      .findElement(By.id("username"))
-      .isDisplayed();
-    expect(isUsernameDisplayed).to.be.true;
+    it('should load the login page', async function () {
+        const loginPagePath = 'file:///C:/Users/Lenovo/Documents/Project/PPMPL/praktikum-testing/loginPage.html'; // Full path to your HTML file
+        await driver.get(loginPagePath);
+        const title = await driver.getTitle();
+        expect(title).to.equal('Login Page');
+    });
 
-    // Memeriksa apakah field password terlihat
-    const isPasswordDisplayed = await driver
-      .findElement(By.id("password"))
-      .isDisplayed();
-    expect(isPasswordDisplayed).to.be.true;
-  });
+    it('should input username and password using CSS Selectors', async function () {
+        await driver.findElement(By.css('#username')).sendKeys('testuser');
+        await driver.findElement(By.css('#password')).sendKeys('password123');
+        
+        const usernameValue = await driver.findElement(By.css('#username')).getAttribute('value');
+        const passwordValue = await driver.findElement(By.css('#password')).getAttribute('value');
+        expect(usernameValue).to.equal('testuser');
+        expect(passwordValue).to.equal('password123');
+    });
 
-  it("should input username and password using CSS Selector and XPath", async function () {
-    // Menggunakan CSS Selector untuk menemukan elemen username
-    await driver.findElement(By.css("#username")).sendKeys("testuser");
+    it('should click the login button and validate successful login', async function () {
+        await driver.findElement(By.css('#loginButton')).click();
+        
+        // Wait for the dashboard element to be displayed after a successful login
+        const dashboardElement = await driver.wait(
+            async () => {
+                const el = await driver.findElement(By.id('dashboardElement')); // Ensure this ID matches the dashboard's HTML
+                return el.isDisplayed() ? el : null;
+            },
+            10000 // Timeout after 10 seconds
+        );
 
-    // Menggunakan XPath untuk menemukan elemen password
-    await driver
-      .findElement(By.xpath('//*[@id="password"]'))
-      .sendKeys("password123");
+        expect(dashboardElement).to.exist; // Ensure the dashboard element is present
+    });
 
-    const usernameValue = await driver
-      .findElement(By.css("#username"))
-      .getAttribute("value");
-    const passwordValue = await driver
-      .findElement(By.xpath('//*[@id="password"]'))
-      .getAttribute("value");
+    it('should handle failed login attempts', async function () {
+        await driver.get('file:///C:/Users/Lenovo/Documents/Project/PPMPL/praktikum-testing/loginPage.html'); // Reload the login page
+        
+        await driver.findElement(By.css('#username')).sendKeys('wronguser');
+        await driver.findElement(By.css('#password')).sendKeys('wrongpassword');
+        await driver.findElement(By.css('#loginButton')).click();
+        
+        // Wait for the error message to be displayed
+        const errorMessageElement = await driver.wait(
+            async () => {
+                const el = await driver.findElement(By.id('errorMessage'));
+                return el.isDisplayed() ? el : null;
+            },
+            10000 // Timeout after 10 seconds
+        );
 
-    expect(usernameValue).to.equal("testuser");
-    expect(passwordValue).to.equal("password123");
-  });
+        const errorMessage = await errorMessageElement.getText();
+        expect(errorMessage).to.equal('Invalid username or password.'); // Adjust expected message as needed
+    });
+    
+    it('should input data using CSS Selector and XPath', async function () {
 
-  it("should click the login button and validate the login process", async function () {
-    // Masukkan username dan password terlebih dahulu
-    await driver.findElement(By.id("username")).sendKeys("testUser");
-    await driver.findElement(By.id("password")).sendKeys("testPassword");
+        await driver.findElement(By.id('username')).clear();
+        await driver.findElement(By.id('password')).clear();
 
-    // Klik tombol login
-    await driver.findElement(By.id("loginButton")).click();
+        await driver.findElement(By.css('#username')).sendKeys('testuser');
 
-    // Tunggu sampai halaman berubah atau elemen tertentu muncul
-    await driver.wait(until.urlContains("dashboard"), 5000); // Misalnya, URL berubah setelah login
+        await driver.findElement(By.xpath('//*[@id="password"]')).sendKeys('password123');
 
-    // Atau validasi dengan memeriksa elemen spesifik yang muncul setelah login berhasil
-    let loggedInElement = await driver.findElement(By.id("welcomeMessage"));
-    let isDisplayed = await loggedInElement.isDisplayed();
-    expect(isDisplayed).to.be.true; // Validasi bahwa elemen tersebut ada setelah login
-  });
+        const usernameValue = await driver.findElement(By.id('username')).getAttribute('value');
+        const passwordValue = await driver.findElement(By.id('password')).getAttribute('value');
 
-  it("should display an error message for incorrect login", async function () {
-    // Mengisi dengan username dan password yang salah
-    await driver.findElement(By.css("#username")).clear();
-    await driver.findElement(By.xpath('//*[@id="password"]')).clear();
+        expect(usernameValue).to.equal('testuser');
+        expect(passwordValue).to.equal('password123');
+    });
 
-    await driver.findElement(By.css("#username")).sendKeys("wronguser");
-    await driver
-      .findElement(By.xpath('//*[@id="password"]'))
-      .sendKeys("wrongpassword");
+    it('should validate visibility of login elements', async function () {
+        const isLoginButtonDisplayed = await driver.findElement(By.css('#loginButton')).isDisplayed();
+        expect(isLoginButtonDisplayed).to.be.true;
 
-    // Klik tombol login
-    await driver.findElement(By.id("loginButton")).click();
+        const isUsernameFieldDisplayed = await driver.findElement(By.css('#username')).isDisplayed();
+        expect(isUsernameFieldDisplayed).to.be.true;
 
-    // Tunggu pesan error muncul
-    await driver.wait(until.elementLocated(By.id("errorMessage")), 5000);
-
-    // Verifikasi pesan error
-    const errorMessage = await driver
-      .findElement(By.id("errorMessage"))
-      .getText();
-    expect(errorMessage).to.equal("Invalid username or password");
-  });
+        const isPasswordFieldDisplayed = await driver.findElement(By.css('#password')).isDisplayed();
+        expect(isPasswordFieldDisplayed).to.be.true;
+    });
 });

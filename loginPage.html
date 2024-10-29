@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        #errorMessage {
+            color: red;
+            display: none; /* Hidden by default */
+        }
+    </style>
+</head>
+<body>
+    <h2>Login</h2>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <br><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+        <br><br>
+        <button type="submit" id="loginButton">Login</button>
+        <p id="errorMessage">Invalid username or password.</p> <!-- Error message -->
+    </form>
+
+    <script>
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent form submission
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Simulated login validation
+            if (username === 'testuser' && password === 'password123') {
+                // Redirect to dashboard page
+                window.location.href = 'dashboard.html'; // Ensure this file exists
+            } else {
+                // Show error message
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
